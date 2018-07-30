@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <RootNamespace>P03_FootballBetting.Data</RootNamespace>
+    <AssemblyName>P03_FootballBetting.Data</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="microsoft.entityframeworkcore.sqlserver" Version="2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\P03_ FootballBetting.Data.Models\P03_FootballBetting.Data.Models.csproj" />
+  </ItemGroup>
+
+</Project>
