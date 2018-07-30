@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RootNamespace>P01_BillsPaymentSystem.Data.Models</RootNamespace>
+    <AssemblyName>P01_BillsPaymentSystem.Data.Models</AssemblyName>
+  </PropertyGroup>
+
+</Project>
