@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using DataAnnotations = System.ComponentModel.DataAnnotations;
 
     using Newtonsoft.Json;
     using ProductsShop.App.Dtos.Json.Export;
@@ -220,6 +221,14 @@
             string jsonString = JsonConvert.SerializeObject(usersColletion, Formatting.Indented, settings);
 
             File.WriteAllText(pathToJsonsFolder + "users-and-products.json", jsonString);
+        }
+
+        private bool IsValid(object obj)
+        {
+            var validatonContext = new DataAnnotations.ValidationContext(obj);
+            var validationResults = new List<DataAnnotations.ValidationResult>();
+
+            return DataAnnotations.Validator.TryValidateObject(obj, validatonContext, validationResults, true);
         }
     }
 }
