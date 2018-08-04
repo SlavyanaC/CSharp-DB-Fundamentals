@@ -1,13 +1,11 @@
 ﻿namespace FastFood.App
 {
     using System;
-    using System.Data.SqlClient;
     using System.IO;
+
     using AutoMapper;
+
     using FastFood.Data;
-    using FastFood.DataProcessor;
-    using Microsoft.EntityFrameworkCore;
-    using Newtonsoft.Json;
 
     public class Startup
     {

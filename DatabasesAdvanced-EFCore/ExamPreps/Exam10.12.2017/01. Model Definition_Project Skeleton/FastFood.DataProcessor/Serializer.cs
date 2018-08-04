@@ -20,6 +20,7 @@
             var type = Enum.Parse<OrderType>(orderType);
 
             var employee = context.Employees
+                .ToArray()
                 .Where(e => e.Name == employeeName)
                 .Select(e => new
                 {
