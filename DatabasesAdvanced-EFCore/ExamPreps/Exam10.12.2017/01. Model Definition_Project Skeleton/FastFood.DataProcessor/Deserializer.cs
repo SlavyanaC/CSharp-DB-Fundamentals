@@ -100,8 +100,11 @@
             foreach (var orderDto in orderDtos)
             {
                 Employee orderEmployee = GetEmployee(context, orderDto.Employee);
-                bool orderItemsExist = CheckIfItemsExist(context, orderDto.Items);
-                if (!IsValid(orderDto) || !IsValid(orderDto.Items) || orderEmployee == null || !orderItemsExist)
+
+                bool itemsAreValid = orderDto.Items.All(IsValid);
+                bool orderItemsExist = orderDto.Items.All(i => context.Items.Any(ci => ci.Name == i.Name));
+
+                if (!IsValid(orderDto) || !itemsAreValid || orderEmployee == null || !orderItemsExist)
                 {
                     result.AppendLine(FailureMessage);
                     continue;
@@ -182,19 +185,6 @@
         {
             Item item = context.Items.SingleOrDefault(i => i.Name == name);
             return item;
-        }
-
-        private static bool CheckIfItemsExist(FastFoodDbContext context, OrderItemDto[] orderItems)
-        {
-            foreach (var orderItem in orderItems)
-            {
-                if (!context.Items.Any(i => i.Name == orderItem.Name))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private static Employee GetEmployee(FastFoodDbContext context, string employeeName)
