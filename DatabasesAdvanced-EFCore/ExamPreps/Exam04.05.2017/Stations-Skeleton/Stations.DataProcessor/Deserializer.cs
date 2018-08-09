@@ -8,133 +8,117 @@
     using System.Linq;
     using System.Text;
     using System.Xml.Serialization;
-    using Microsoft.EntityFrameworkCore;
+
+    using AutoMapper;
     using Newtonsoft.Json;
 
     using Stations.Data;
     using Stations.DataProcessor.Dto.Import;
+    using Stations.DataProcessor.Dto.Import.Ticket;
     using Stations.Models;
     using Stations.Models.Enums;
 
     public static class Deserializer
     {
-        private const string FailureMessage = "Invalid data format.";
+        private const string ERROR_MESSAGE = "Invalid data format.";
         private const string SuccessMessage = "Record {0} successfully imported.";
-        private const string TripAddMessage = "Trip from {0} to {1} imported.";
-        private const string TicketaAddMessage = "Ticket from {0} to {1} departing at {2} imported.";
 
         public static string ImportStations(StationsDbContext context, string jsonString)
         {
-            Station[] deserializedStations = JsonConvert.DeserializeObject<Station[]>(jsonString);
+            var stationDtos = JsonConvert.DeserializeObject<StationDto[]>(jsonString);
 
-            StringBuilder sb = new StringBuilder();
-            List<Station> validStations = new List<Station>();
-            foreach (var deserializedStation in deserializedStations)
+            var sb = new StringBuilder();
+            var validStations = new List<Station>();
+
+            foreach (var stationDto in stationDtos)
             {
-                if (deserializedStation.Town == null)
+                bool exists = validStations.Any(s => s.Name == stationDto.Name);
+                if (!IsValid(stationDto) || exists)
                 {
-                    deserializedStation.Town = deserializedStation.Name;
-                }
-
-                var alreadyExists = validStations.Any(s => s.Name == deserializedStation.Name);
-                if (!IsValid(deserializedStation) || alreadyExists)
-                {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                if (deserializedStation.Town == null)
-                {
-                    deserializedStation.Town = deserializedStation.Name;
-                }
+                stationDto.Town = stationDto.Town ?? stationDto.Name;
 
-                Station station = new Station
-                {
-                    Name = deserializedStation.Name,
-                    Town = deserializedStation.Town,
-                };
+                var station = Mapper.Map<Station>(stationDto);
 
                 validStations.Add(station);
-                sb.AppendLine(string.Format(SuccessMessage, deserializedStation.Name));
+                sb.AppendLine(string.Format(SuccessMessage, station.Name));
             }
 
             context.Stations.AddRange(validStations);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         public static string ImportClasses(StationsDbContext context, string jsonString)
         {
-            SeatingClass[] deserializedClasses = JsonConvert.DeserializeObject<SeatingClass[]>(jsonString);
+            var classDtos = JsonConvert.DeserializeObject<SeatingClassDto[]>(jsonString);
 
-            List<SeatingClass> validSeatingClasses = new List<SeatingClass>();
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
+            var validClasses = new List<SeatingClass>();
 
-            foreach (var deserializedClass in deserializedClasses)
+            foreach (var classDto in classDtos)
             {
-                bool isAdded = validSeatingClasses.Any(sc => sc.Name == deserializedClass.Name || sc.Abbreviation == deserializedClass.Abbreviation);
-                if (!IsValid(deserializedClass) || isAdded)
+                bool exists = validClasses.Any(c => c.Name == classDto.Name || c.Abbreviation == classDto.Abbreviation);
+                if (!IsValid(classDto) || exists)
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                SeatingClass seatingClass = new SeatingClass
-                {
-                    Name = deserializedClass.Name,
-                    Abbreviation = deserializedClass.Abbreviation
-                };
+                var seatingClass = Mapper.Map<SeatingClass>(classDto);
 
-                validSeatingClasses.Add(seatingClass);
+                validClasses.Add(seatingClass);
                 sb.AppendLine(string.Format(SuccessMessage, seatingClass.Name));
             }
 
-            context.SeatingClasses.AddRange(validSeatingClasses);
+            context.SeatingClasses.AddRange(validClasses);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         public static string ImportTrains(StationsDbContext context, string jsonString)
         {
-            TrainDto[] deserializedTrains = JsonConvert.DeserializeObject<TrainDto[]>(jsonString, new JsonSerializerSettings
+            var trainDtos = JsonConvert.DeserializeObject<TrainDto[]>(jsonString, new JsonSerializerSettings
             {
-                NullValueHandling = NullValueHandling.Ignore
+                NullValueHandling = NullValueHandling.Ignore,
             });
 
-            List<Train> validTrains = new List<Train>();
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
+            var validTrains = new List<Train>();
 
-            foreach (var deserializedTrain in deserializedTrains)
+            foreach (var trainDto in trainDtos)
             {
-                bool trainAlreadyExists = validTrains.Any(t => t.TrainNumber == deserializedTrain.TrainNumber);
+                var seatsAreValid = trainDto.Seats.All(IsValid);
+                bool exists = validTrains.Any(t => t.TrainNumber == trainDto.TrainNumber);
+                var classesAreValid = trainDto.Seats.All(s => context.SeatingClasses.Any(sc => sc.Name == s.Name && sc.Abbreviation == s.Abbreviation));
 
-                bool seatsAreValid = deserializedTrain.Seats.All(IsValid);
-
-                bool seatingClassesAreValid = deserializedTrain.Seats
-                    .All(scd => context.SeatingClasses.Any(sc => sc.Name == scd.Name && sc.Abbreviation == scd.Abbreviation));
-
-                if (!IsValid(deserializedTrain) || trainAlreadyExists || !seatsAreValid || !seatingClassesAreValid)
+                if (!IsValid(trainDto) || !seatsAreValid || !classesAreValid || exists)
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                TrainSeat[] trainSeats = deserializedTrain.Seats
-                    .Select(s => new TrainSeat
-                    {
-                        SeatingClass = context.SeatingClasses.SingleOrDefault(sc => sc.Name == s.Name && sc.Abbreviation == s.Abbreviation),
-                        Quantity = s.Quantity.Value,
-                    }).ToArray();
+                var trainType = Enum.Parse<TrainType>(trainDto.Type);
 
-                TrainType trainType = Enum.TryParse(deserializedTrain.Type, out TrainType type) ? type : TrainType.HighSpeed;
-
-                Train train = new Train
+                var trainSeats = trainDto.Seats.Select(s => new TrainSeat
                 {
-                    TrainNumber = deserializedTrain.TrainNumber,
+                    SeatingClass = context.SeatingClasses.SingleOrDefault(sc => sc.Name == s.Name && sc.Abbreviation == s.Abbreviation),
+                    Quantity = s.Quantity.Value,
+                })
+                .ToArray();
+
+                var train = new Train
+                {
+                    TrainNumber = trainDto.TrainNumber,
                     Type = trainType,
-                    TrainSeats = trainSeats
+                    TrainSeats = trainSeats,
                 };
 
                 validTrains.Add(train);
@@ -144,188 +128,188 @@
             context.Trains.AddRange(validTrains);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         public static string ImportTrips(StationsDbContext context, string jsonString)
         {
-            TripDto[] tripDtos = JsonConvert.DeserializeObject<TripDto[]>(jsonString, new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore,
-            });
+            var tripDtos = JsonConvert.DeserializeObject<TripDto[]>(jsonString);
 
-            StringBuilder sb = new StringBuilder();
-            List<Trip> validTrips = new List<Trip>();
+            var sb = new StringBuilder();
+            var validTrips = new List<Trip>();
 
             foreach (var tripDto in tripDtos)
             {
                 if (!IsValid(tripDto))
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                Train train = context.Trains.SingleOrDefault(t => t.TrainNumber == tripDto.Train);
-                Station originStation = context.Stations.SingleOrDefault(s => s.Name == tripDto.OriginStation);
-                Station destinationStation = context.Stations.SingleOrDefault(s => s.Name == tripDto.DestinationStation);
+                var train = context.Trains.SingleOrDefault(t => t.TrainNumber == tripDto.TrainNumber);
+                var originStation = context.Stations.SingleOrDefault(s => s.Name == tripDto.OriginStationName);
+                var destinationStation = context.Stations.SingleOrDefault(s => s.Name == tripDto.DestinationStationName);
 
                 if (train == null || originStation == null || destinationStation == null)
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                DateTime departureTime = DateTime.ParseExact(tripDto.DepartureTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
-                DateTime arrivalTime = DateTime.ParseExact(tripDto.ArrivalTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                var departureTime = DateTime.ParseExact(tripDto.DepartureTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                var arrivalTime = DateTime.ParseExact(tripDto.ArrivalTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
                 if (departureTime > arrivalTime)
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                TimeSpan timeDifference;
+                TimeSpan timeDiff;
                 if (tripDto.TimeDifference != null)
                 {
-                    timeDifference = TimeSpan.ParseExact(tripDto.TimeDifference, "hh\\:mm", CultureInfo.InvariantCulture);
+                    timeDiff = TimeSpan.ParseExact(tripDto.TimeDifference, "hh\\:mm", CultureInfo.InvariantCulture);
                 }
 
-                TripStatus tripStatus = Enum.TryParse(tripDto.Status, out TripStatus status) ? status : TripStatus.OnTime;
+                var tripStatus = Enum.Parse<TripStatus>(tripDto.Status);
 
-                Trip trip = new Trip
+                var trip = new Trip
                 {
                     Train = train,
                     OriginStation = originStation,
                     DestinationStation = destinationStation,
                     DepartureTime = departureTime,
                     ArrivalTime = arrivalTime,
-                    Status = status,
-                    TimeDifference = timeDifference
+                    TimeDifference = timeDiff,
+                    Status = tripStatus,
                 };
 
                 validTrips.Add(trip);
-
-                sb.AppendLine(string.Format(TripAddMessage, tripDto.OriginStation, tripDto.DestinationStation));
+                sb.AppendLine($"Trip from {tripDto.OriginStationName} to {tripDto.DestinationStationName} imported.");
             }
 
             context.Trips.AddRange(validTrips);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         public static string ImportCards(StationsDbContext context, string xmlString)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(CardDto[]), new XmlRootAttribute("Cards"));
+            var serializer = new XmlSerializer(typeof(CardDto[]), new XmlRootAttribute("Cards"));
+            var carDtos = (CardDto[])serializer.Deserialize(new StringReader(xmlString));
 
-            CardDto[] cardDtos = (CardDto[])serializer.Deserialize(new StringReader(xmlString));
+            var sb = new StringBuilder();
+            var validCards = new List<CustomerCard>();
 
-            List<CustomerCard> validCards = new List<CustomerCard>();
-            StringBuilder sb = new StringBuilder();
-
-            foreach (var cardDto in cardDtos)
+            foreach (var cardDto in carDtos)
             {
                 if (!IsValid(cardDto))
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                CardType cardType = Enum.TryParse(cardDto.CardType, out CardType type) ? type : CardType.Normal;
+                var cardType = Enum.Parse<CardType>(cardDto.CardType);
 
-                CustomerCard customerCard = new CustomerCard
-                {
-                    Name = cardDto.Name,
-                    Age = cardDto.Age,
-                    Type = cardType,
-                };
+                var card = Mapper.Map<CustomerCard>(cardDto);
+                card.Type = cardType;
 
-                validCards.Add(customerCard);
-                sb.AppendLine(string.Format(SuccessMessage, customerCard.Name));
+                validCards.Add(card);
+                sb.AppendLine(string.Format(SuccessMessage, card.Name));
             }
 
             context.Cards.AddRange(validCards);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         public static string ImportTickets(StationsDbContext context, string xmlString)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(TicketDto[]), new XmlRootAttribute("Tickets"));
+            var serializer = new XmlSerializer(typeof(TicketDto[]), new XmlRootAttribute("Tickets"));
+            var ticketDtos = (TicketDto[])serializer.Deserialize(new StringReader(xmlString));
 
-            TicketDto[] ticketDtos = (TicketDto[])serializer.Deserialize(new StringReader(xmlString));
-
-            StringBuilder sb = new StringBuilder();
-            List<Ticket> validTickets = new List<Ticket>();
+            var sb = new StringBuilder();
+            var validTickets = new List<Ticket>();
 
             foreach (var ticketDto in ticketDtos)
             {
-                if (!IsValid(ticketDto))
+                if (!IsValid(ticketDto) || !IsValid(ticketDto.Trip))
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                DateTime tickedDepartureTime = DateTime.ParseExact(ticketDto.Trip.DepartureTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                var ticketDepartureTime = DateTime.ParseExact(ticketDto.Trip.DepartureTime, "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
-                Trip trip = context.Trips
-                    .Include(t => t.OriginStation)
-                    .Include(t => t.DestinationStation)
-                    .Include(t => t.Train)
-                    .ThenInclude(t => t.TrainSeats)
+                var trip = context.Trips
                     .SingleOrDefault(t => t.OriginStation.Name == ticketDto.Trip.OriginStationName &&
                                      t.DestinationStation.Name == ticketDto.Trip.DestinationStationName &&
-                                     t.DepartureTime == tickedDepartureTime);
+                                     t.DepartureTime == ticketDepartureTime);
 
                 if (trip == null)
                 {
-                    sb.AppendLine(FailureMessage);
+                    sb.AppendLine(ERROR_MESSAGE);
                     continue;
                 }
 
-                string seatingClassAbbreviation = ticketDto.Seat.Substring(0, 2);
-                int seatNumber = int.Parse(ticketDto.Seat.Substring(2));
+                var train = context.Trains.SingleOrDefault(t => t.TrainNumber == trip.Train.TrainNumber);
 
-                TrainSeat trainSeat = trip.Train.TrainSeats.SingleOrDefault(s => s.SeatingClass.Abbreviation == seatingClassAbbreviation && s.Quantity >= seatNumber);
+                var seatingClassName = ticketDto.SeatingPlace.Substring(0, 2);
+                var seatNumber = int.Parse(ticketDto.SeatingPlace.Substring(2));
 
-                CustomerCard customerCard = null;
+                var trainContainsSeatingClass = train.TrainSeats.Any(ts => ts.SeatingClass.Abbreviation == seatingClassName);
+                var trainNumberOfPlaces = train.TrainSeats.Where(t => t.SeatingClass.Abbreviation == seatingClassName).Select(t => t.Quantity).SingleOrDefault();
+
+                var trainHasPlace = seatNumber > 0 && seatNumber <= trainNumberOfPlaces;
+
+                if (!trainContainsSeatingClass || !trainHasPlace)
+                {
+                    sb.AppendLine(ERROR_MESSAGE);
+                    continue;
+                }
+
+                CustomerCard cardFromDb = null;
                 if (ticketDto.Card != null)
                 {
-                    customerCard = context.Cards.SingleOrDefault(c => c.Name == ticketDto.Card.Name);
+                    var card = context.Cards.SingleOrDefault(c => c.Name == ticketDto.Card.Name);
+                    if (card == null || !IsValid(ticketDto))
+                    {
+                        sb.AppendLine(ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    cardFromDb = card;
                 }
 
-                if (trainSeat == null || customerCard == null || !IsValid(ticketDto.Card) || !IsValid(ticketDto.Trip))
-                {
-                    sb.AppendLine(FailureMessage);
-                    continue;
-                }
-
-                Ticket ticket = new Ticket
-                {
-                    CustomerCard = customerCard,
-                    Price = ticketDto.Price,
-                    Trip = trip,
-                    SeatingPlace = ticketDto.Seat
-                };
+                var ticket = Mapper.Map<Ticket>(ticketDto);
+                ticket.CustomerCard = cardFromDb;
+                ticket.Trip = trip;
 
                 validTickets.Add(ticket);
 
-                string departureTime = ticket.Trip.DepartureTime.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                var originStatin = ticketDto.Trip.OriginStationName;
+                var destinationStation = ticketDto.Trip.DestinationStationName;
+                var departureTime = ticketDepartureTime.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
-                sb.AppendLine(string.Format(TicketaAddMessage, ticket.Trip.OriginStation.Name, ticket.Trip.DestinationStation.Name, departureTime));
+                sb.AppendLine($"Ticket from {originStatin} to {destinationStation} departing at {departureTime} imported.");
             }
 
             context.Tickets.AddRange(validTickets);
             context.SaveChanges();
 
-            return sb.ToString().Trim();
+            var result = sb.ToString();
+            return result;
         }
 
         private static bool IsValid(object obj)
         {
-            ValidationContext validationContext = new ValidationContext(obj);
-            List<ValidationResult> validationResult = new List<ValidationResult>();
+            var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(obj);
+            var validationResult = new List<ValidationResult>();
 
             bool isValid = Validator.TryValidateObject(obj, validationContext, validationResult, true);
             return isValid;

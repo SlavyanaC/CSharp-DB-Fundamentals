@@ -1,5 +1,6 @@
 ﻿namespace Stations.DataProcessor.Dto.Import
 {
+    using Newtonsoft.Json;
     using System.ComponentModel.DataAnnotations;
 
     public class TripDto
@@ -11,15 +12,18 @@
 
         [Required]
         [MaxLength(10)]
-        public string Train { get; set; }
+        [JsonProperty("Train")]
+        public string TrainNumber { get; set; }
 
         [Required]
         [MaxLength(50)]
-        public string OriginStation { get; set; }
+        [JsonProperty("OriginStation")]
+        public string OriginStationName { get; set; }
 
         [Required]
         [MaxLength(50)]
-        public string DestinationStation { get; set; }
+        [JsonProperty("DestinationStation")]
+        public string DestinationStationName { get; set; }
 
         [Required]
         public string DepartureTime { get; set; }
@@ -27,8 +31,8 @@
         [Required]
         public string ArrivalTime { get; set; }
 
-        public string Status { get; set; }
-
         public string TimeDifference { get; set; }
+
+        public string Status { get; set; }
     }
 }

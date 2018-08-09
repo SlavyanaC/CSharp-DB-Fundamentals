@@ -1,9 +1,9 @@
 ﻿namespace Stations.Models.Enums
 {
-	public enum TripStatus
-	{
-		OnTime,
-		Delayed,
-		Early
-	}
+    public enum TripStatus
+    {
+        OnTime,
+        Delayed,
+        Early
+    }
 }

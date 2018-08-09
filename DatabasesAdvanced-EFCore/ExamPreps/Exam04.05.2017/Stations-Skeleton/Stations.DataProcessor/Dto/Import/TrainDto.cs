@@ -1,6 +1,5 @@
 ﻿namespace Stations.DataProcessor.Dto.Import
 {
-    using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
 
     public class TrainDto
@@ -8,7 +7,7 @@
         public TrainDto()
         {
             this.Type = "HighSpeed";
-            this.Seats = new HashSet<TrainSeatDto>();
+            this.Seats = new SeatDto[0];
         }
 
         [Required]
@@ -17,6 +16,6 @@
 
         public string Type { get; set; }
 
-        public ICollection<TrainSeatDto> Seats { get; set; }
+        public SeatDto[] Seats { get; set; }
     }
 }

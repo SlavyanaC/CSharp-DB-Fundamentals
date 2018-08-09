@@ -176,7 +176,7 @@
       <DepartureTime>21/03/2016 12:45</DepartureTime>
     </Trip>
   </Ticket>
-  <Ticket price="10.10" seat="FC1">
+   <Ticket price="10.10" seat="FC1">
     <Trip>
       <OriginStation>Sofia</OriginStation>
       <DestinationStation>Yelan-Kolenovskiy-Camaragibe-Barat-Kelungkung-Saynshand</DestinationStation>
@@ -214,7 +214,7 @@
     </Trip>
     <Card Name="Henry Moreno" />
   </Ticket>
-  <Ticket price="89.39" seat="FC12">
+   <Ticket price="89.39" seat="FC12">
     <Trip>
       <OriginStation>Cacapava</OriginStation>
       <DestinationStation>Tunoshna</DestinationStation>

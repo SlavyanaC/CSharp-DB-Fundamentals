@@ -5,12 +5,7 @@
       <Ticket>
         <OriginStation>Sofia</OriginStation>
         <DestinationStation>Varna</DestinationStation>
-        <DepartureTime>24/05/2017 12:00</DepartureTime>
-      </Ticket>
-      <Ticket>
-        <OriginStation>Sofia</OriginStation>
-        <DestinationStation>Varna</DestinationStation>
-        <DepartureTime>24/05/2017 12:00</DepartureTime>
+        <DepartureTime>24/05/2017 10:00</DepartureTime>
       </Ticket>
       <Ticket>
         <OriginStation>Huaian</OriginStation>
@@ -20,7 +15,12 @@
       <Ticket>
         <OriginStation>Sofia</OriginStation>
         <DestinationStation>Varna</DestinationStation>
-        <DepartureTime>24/05/2017 10:00</DepartureTime>
+        <DepartureTime>24/05/2017 12:00</DepartureTime>
+      </Ticket>
+      <Ticket>
+        <OriginStation>Sofia</OriginStation>
+        <DestinationStation>Varna</DestinationStation>
+        <DepartureTime>24/05/2017 12:00</DepartureTime>
       </Ticket>
     </Tickets>
   </Card>

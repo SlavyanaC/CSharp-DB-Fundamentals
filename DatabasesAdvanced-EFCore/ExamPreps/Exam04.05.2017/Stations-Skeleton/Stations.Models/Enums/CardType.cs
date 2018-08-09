@@ -1,11 +1,11 @@
 ﻿namespace Stations.Models.Enums
 {
-	public enum CardType
-	{
-		Pupil,
-		Student,
-		Elder,
-		Debilitated,
-		Normal
-	}
+    public enum CardType
+    {
+        Pupil,
+        Student,
+        Elder,
+        Debilitated,
+        Normal
+    }
 }

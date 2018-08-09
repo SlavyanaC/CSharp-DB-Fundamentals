@@ -1,14 +1,13 @@
 ﻿namespace Stations.Models
 {
+    using Stations.Models.Enums;
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
-    using Stations.Models.Enums;
 
     public class CustomerCard
     {
         public CustomerCard()
         {
-            this.Type = CardType.Normal;
             this.BoughtTickets = new HashSet<Ticket>();
         }
 
@@ -18,6 +17,7 @@
         [MaxLength(128)]
         public string Name { get; set; }
 
+        [Required]
         [Range(0, 120)]
         public int Age { get; set; }
 

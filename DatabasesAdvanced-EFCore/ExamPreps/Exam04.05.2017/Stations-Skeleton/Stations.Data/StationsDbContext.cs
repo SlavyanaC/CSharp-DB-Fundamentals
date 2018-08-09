@@ -32,47 +32,16 @@
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SeatingClass>(entity =>
+            modelBuilder.Entity<Trip>(entity =>
             {
-                entity.HasIndex(sc => sc.Name)
-                    .IsUnique();
-
-                entity.HasIndex(sc => sc.Abbreviation)
-                    .IsUnique();
-            });
-
-            modelBuilder.Entity<Station>(entity =>
-            {
-                entity.HasIndex(s => s.Name)
-                    .IsUnique();
-
-                entity.HasMany(s => s.TripsFrom)
-                    .WithOne(t => t.OriginStation)
+                entity.HasOne(t => t.OriginStation)
+                    .WithMany(s => s.TripsFrom)
                     .HasForeignKey(t => t.OriginStationId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(s => s.TripsTo)
-                    .WithOne(t => t.DestinationStation)
+                entity.HasOne(t => t.DestinationStation)
+                    .WithMany(s => s.TripsTo)
                     .HasForeignKey(t => t.DestinationStationId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            modelBuilder.Entity<Train>(entity =>
-            {
-                entity.HasIndex(t => t.TrainNumber)
-                    .IsUnique();
-
-                entity.HasMany(t => t.Trips)
-                    .WithOne(tr => tr.Train)
-                    .HasForeignKey(tr => tr.TrainId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            modelBuilder.Entity<Ticket>(entity =>
-            {
-                entity.HasOne(t => t.CustomerCard)
-                    .WithMany(pc => pc.BoughtTickets)
-                    .HasForeignKey(t => t.CustomerCardId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }

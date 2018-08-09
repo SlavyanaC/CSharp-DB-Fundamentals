@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Results\" />
+    <Folder Include="ImportResults\" />
   </ItemGroup>
 
 </Project>

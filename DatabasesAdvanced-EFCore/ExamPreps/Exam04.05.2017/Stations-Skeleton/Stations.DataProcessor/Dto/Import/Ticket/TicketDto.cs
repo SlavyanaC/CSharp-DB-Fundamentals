@@ -1,4 +1,4 @@
-﻿namespace Stations.DataProcessor.Dto.Import
+﻿namespace Stations.DataProcessor.Dto.Import.Ticket
 {
     using System.ComponentModel.DataAnnotations;
     using System.Xml.Serialization;
@@ -7,20 +7,19 @@
     public class TicketDto
     {
         [Required]
-        [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+        [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
         [XmlAttribute("price")]
         public decimal Price { get; set; }
 
         [Required]
-        [RegularExpression(@"^\w{2}\d{1,6}$")]
+        [MaxLength(8)]
+        [RegularExpression(@"^[A-Z]{2}\d+$")]
         [XmlAttribute("seat")]
-        public string Seat { get; set; }
+        public string SeatingPlace { get; set; }
 
         [Required]
-        [XmlElement("Trip")]
         public TicketTripDto Trip { get; set; }
 
-        [XmlElement("Card")]
         public TicketCardDto Card { get; set; }
     }
 }

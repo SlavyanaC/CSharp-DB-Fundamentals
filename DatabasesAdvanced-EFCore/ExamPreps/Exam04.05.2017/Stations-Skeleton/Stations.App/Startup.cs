@@ -2,9 +2,7 @@
 {
     using System;
     using System.IO;
-
     using AutoMapper;
-
     using Stations.Data;
 
     public class Startup
@@ -22,9 +20,9 @@
             ExportEntities(context);
         }
 
-        private static void ImportEntities(StationsDbContext context, string baseDir = @"..\..\..\Datasets\")
+        private static void ImportEntities(StationsDbContext context, string baseDir = "../../../Datasets/")
         {
-            const string exportDir = "../../../Results/";
+            const string exportDir = "../../../ImportResults/";
 
             var stations = DataProcessor.Deserializer.ImportStations(context, File.ReadAllText(baseDir + "stations.json"));
             PrintAndExportEntityToFile(stations, exportDir + "Stations.txt");
@@ -47,7 +45,7 @@
 
         private static void ExportEntities(StationsDbContext context)
         {
-            const string exportDir = "../../../Results/";
+            const string exportDir = "../../../ImportResults/";
 
             var jsonOutput = DataProcessor.Serializer.ExportDelayedTrains(context, "01/01/2017");
             Console.WriteLine(jsonOutput);
