@@ -1,24 +1,48 @@
 ﻿namespace Stations.App
 {
-    using AutoMapper;
-    using Stations.DataProcessor.Dto.Import;
-    using Stations.DataProcessor.Dto.Import.Ticket;
     using Stations.Models;
+    using System.Linq;
+    using System.Globalization;
+
+    using AutoMapper;
+
+    using Export = Stations.DataProcessor.Dto.Export;
+    using Import = Stations.DataProcessor.Dto.Import;
+    using Stations.DataProcessor.Dto.Import.Ticket;
 
     public class StationsProfile : Profile
     {
-        // Configure your AutoMapper here if you wish to use it. If not, DO NOT DELETE THIS CLASS
+        private const string DateTimeFormat = "dd/MM/yyyy hh:mm";
+
         public StationsProfile()
         {
-            CreateMap<StationDto, Station>();
+            CreateMap<Import.StationDto, Station>();
 
-            CreateMap<SeatingClassDto, SeatingClass>();
+            CreateMap<Import.SeatingClassDto, SeatingClass>();
 
-            CreateMap<CardDto, CustomerCard>();
+            CreateMap<Import.CardDto, CustomerCard>();
 
             CreateMap<TicketDto, Ticket>()
                 .ForMember(dest => dest.Trip, opt => opt.Ignore())
                 .ForMember(dest => dest.CustomerCard, opt => opt.Ignore());
+
+            CreateMap<Train, Export.DelayedTrainDto>()
+                .ForMember(dest => dest.DelayedTimes,
+                           opt => opt.MapFrom(t => t.Trips
+                                .Where(tr => tr.Status == Models.Enums.TripStatus.Delayed).Count()))
+                .ForMember(dest => dest.MaxDelayedTime,
+                           opt => opt.MapFrom(t => t.Trips.Max(tr => tr.TimeDifference)));
+
+            CreateMap<Ticket, Export.TicketDto>()
+                .ForMember(dest => dest.OriginStation, opt => opt.MapFrom(t => t.Trip.OriginStation.Name))
+                .ForMember(dest => dest.DestinationStation, opt => opt.MapFrom(t => t.Trip.DestinationStation.Name))
+                .ForMember(dest => dest.DepartureTime, opt => opt.MapFrom(t => t.Trip.DepartureTime.ToString(DateTimeFormat, CultureInfo.InvariantCulture)))
+                .ForAllOtherMembers(opt => opt.Ignore());
+
+            CreateMap<CustomerCard, Export.CardDto>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(c => c.Name))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(c => c.Type))
+                .ForMember(dest => dest.Tickets, opt => opt.MapFrom(c => c.BoughtTickets));
         }
     }
 }

@@ -1,22 +1,22 @@
 ﻿namespace Stations.DataProcessor
 {
     using System;
-    using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Globalization;
     using System.Xml.Serialization;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
 
     using AutoMapper;
     using Newtonsoft.Json;
 
     using Stations.Data;
-    using Stations.DataProcessor.Dto.Import;
-    using Stations.DataProcessor.Dto.Import.Ticket;
     using Stations.Models;
     using Stations.Models.Enums;
+    using Stations.DataProcessor.Dto.Import;
+    using Stations.DataProcessor.Dto.Import.Ticket;
 
     public static class Deserializer
     {

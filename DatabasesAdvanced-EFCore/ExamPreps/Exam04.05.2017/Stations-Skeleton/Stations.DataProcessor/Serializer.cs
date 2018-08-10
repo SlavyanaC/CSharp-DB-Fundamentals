@@ -9,6 +9,7 @@
     using System.Xml.Serialization;
 
     using Newtonsoft.Json;
+    using AutoMapper.QueryableExtensions;
 
     using Stations.Data;
     using Stations.DataProcessor.Dto.Export;
@@ -21,14 +22,9 @@
             var date = DateTime.ParseExact(dateAsString, "dd/MM/yyyy", CultureInfo.InvariantCulture);
 
             var trains = context.Trains
-                .Where(t => t.Trips.Any(tp => tp.Status == TripStatus.Delayed) &&
+                .Where(t => t.Trips.Any(tp => tp.Status == TripStatus.Delayed) && 
                        t.Trips.Any(tr => tr.DepartureTime <= date))
-                .Select(t => new
-                {
-                    t.TrainNumber,
-                    DelayedTimes = t.Trips.Where(tr => tr.Status == TripStatus.Delayed).Count(),
-                    MaxDelayedTime = t.Trips.Max(tr => tr.TimeDifference),
-                })
+                .ProjectTo<DelayedTrainDto>()
                 .OrderByDescending(t => t.DelayedTimes)
                 .ThenByDescending(t => t.MaxDelayedTime)
                 .ThenBy(t => t.TrainNumber)
@@ -45,18 +41,7 @@
 
             var cardDtos = context.Cards
                 .Where(c => c.Type == type && c.BoughtTickets.Count > 0)
-                .Select(c => new CardDto
-                {
-                    Name = c.Name,
-                    Type = cardType,
-                    Tickets = c.BoughtTickets.Select(t => new TicketDto
-                    {
-                        OriginStation = t.Trip.OriginStation.Name,
-                        DestinationStation = t.Trip.DestinationStation.Name,
-                        DepartureTime = t.Trip.DepartureTime.ToString("dd/MM/yyyy hh:mm", CultureInfo.InvariantCulture),
-                    })
-                    .ToArray()
-                })
+                .ProjectTo<CardDto>()
                 .OrderBy(c => c.Name)
                 .ToArray();
 
