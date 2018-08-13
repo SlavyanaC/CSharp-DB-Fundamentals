@@ -33,9 +33,6 @@
         {
             var names = prisonersNames.Split(',');
 
-            Func<String, String> reverse = null;
-            reverse = s => s.Length == 1 ? s : reverse(s.Substring(1)) + s[0];
-
             var prisonerMailDtos = context.Prisoners
                 .Where(p => names.Any(n => n == p.FullName))
                 .ProjectTo<PrisonerMailDto>()
